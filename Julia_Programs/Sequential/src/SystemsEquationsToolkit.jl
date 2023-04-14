@@ -2,16 +2,16 @@
 using LinearAlgebra: Tridiagonal
 # Functions 
 # System Equation Linear Sparse
-function system_matrix_sparse( systemDimension::Integer )
+function system_matrix_sparse( systemDimension::Integer, mtxA::AbstractMatrix )
     vtrDiagonalMain = 3*ones(systemDimension)
     vtrDiagonalUpperLower = -1*ones(systemDimension-1)
-    mtxA = convert(Matrix, Tridiagonal(vtrDiagonalUpperLower, vtrDiagonalMain, vtrDiagonalUpperLower))
+    mtxA .= convert(Matrix, Tridiagonal(vtrDiagonalUpperLower, vtrDiagonalMain, vtrDiagonalUpperLower))
     for indexI = 1:systemDimension
         if mtxA[indexI, systemDimension-indexI+1] == 0.0
             mtxA[indexI, systemDimension-indexI+1] = 0.5
         end
     end
-    return mtxA
+    return nothing
 end
 # 
 function vector_independent_term( systemDimension::Integer, vtrB::AbstractVector )

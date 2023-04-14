@@ -46,7 +46,8 @@ function jacobi_method!(
     vectorb::AbstractVector,
     vectorx_exactsolution::AbstractVector,
     vectorx_initial::AbstractVector,
-    maximumiteration::Integer )
+    maximumiteration::Integer, 
+    informationprint::Bool )
 methoderror = 0.0
 vectorx_current = vectorx_initial
 matrixsparseinvD = sparse(inv(matrixD))
@@ -62,8 +63,11 @@ for indexk = 1:maximumiteration
     vectorx_current = vectorx_next
 end
 # Method information
-println("The number of iterations is: $(maximumiteration)")
-println("The method error is: $(methoderror)")
+if informationprint == true
+    println("For $(maximumiteration) iterations")
+    println("the method error is: $(methoderror)")
+    return methoderror
+end
 return nothing
 end
 # =================================================================
@@ -110,7 +114,8 @@ function gauss_seidel_method!(
     vectorb::AbstractVector,
     vectorx_exactsolution::AbstractVector,
     vectorx_initial::AbstractVector,
-    maximumiteration::Integer )
+    maximumiteration::Integer,
+    informationprint::Bool )
 methoderror = 0.0
 vectorx_current = vectorx_initial
 matrixT = matrixD+matrixL
@@ -127,8 +132,11 @@ for indexk = 1:maximumiteration
     vectorx_current = vectorx_next
 end
 # Method information
-println("The number of iterations is: $(maximumiteration)")
-println("The method error is: $(methoderror)")
+if informationprint == true
+    println("For $(maximumiteration) iterations")
+    println("the method error is: $(methoderror)")
+    return methoderror
+end
 return nothing
 end
 # =================================================================
@@ -180,7 +188,8 @@ function sor_method!(
     vectorx_exactsolution::AbstractVector,
     vectorx_initial::AbstractVector,
     maximumiteration::Integer,
-    relaxationParameter::AbstractFloat )
+    relaxationParameter::AbstractFloat,
+    informationprint::Bool )
     omega = relaxationParameter
     iterationnumber = 0
     methoderror = 0.0
@@ -201,8 +210,11 @@ function sor_method!(
         vectorx_current = vectorx_next
     end
     # Method information
-    println("The number of iterations is: $(maximumiteration)")
-    println("The method error is: $(methoderror)")
+    if informationprint == true
+        println("For $(maximumiteration) iterations")
+        println("the method error is: $(methoderror)")
+        return methoderror
+    end
     return nothing
 end
 # =================================================================
@@ -239,7 +251,7 @@ function conjugate_gradient_method(
         vectorR_current = vectorR_next
         vectorD_current = vectorD_next
     end
-    # Output variables
+    # Method information
     println("The iteration number is: $(iterationnumber).")
     println("The method error is: $(methoderror).")
     return nothing
@@ -248,12 +260,12 @@ end
 # Conjugate Gradient Method (for numerical expirements)
 # =================================================================
 function conjugate_gradient_method!( 
-    systemdimension::Integer,
     matrixA::AbstractSparseMatrix,
     vectorb::AbstractVector,
     vectorx_exactsolution::AbstractVector,
     vectorx_initial::AbstractVector,
-    maximumiteration::Integer )
+    maximumiteration::Integer,
+    informationprint::Bool )
     methoderror = 0.0
     vectorx_current = vectorx_initial
     vectorR_current = vectorb - matrixA * vectorx_current
@@ -276,8 +288,11 @@ function conjugate_gradient_method!(
         vectorD_current = vectorD_next
     end
     # Output variables
-    println("The iteration number is: $(maximumiteration).")
-    println("The method error is: $(methoderror).")
+    if informationprint == true
+        println("For $(maximumiteration) iterations")
+        println("the method error is: $(methoderror)")
+        return methoderror
+    end
     return nothing
 end
 # =================================================================
@@ -327,12 +342,12 @@ end
 # Biconjugate Gradient Stabilized Method (for numerical expirements)
 # =================================================================
 function biconjugate_gradient_stabilized_method!( 
-    systemdimension::Integer,
     matrixA::AbstractSparseMatrix,
     vectorb::AbstractVector,
     vectorx_exactsolution::AbstractVector,
     vectorx_initial::AbstractVector,
-    maximumiteration::Integer )
+    maximumiteration::Integer,
+    informationprint::Bool )
     methoderror = 0.0
     vectorx_current = vectorx_initial
     vectorR_current = vectorb - matrixA * vectorx_current
@@ -359,8 +374,11 @@ function biconjugate_gradient_stabilized_method!(
         vectorD_current = vectorD_next
     end
     # Output variables
-    println("The iteration number is: $(maximumiteration).")
-    println("The method error is: $(methoderror).")
+    if informationprint == true
+        println("For $(maximumiteration) iterations")
+        println("the method error is: $(methoderror)")
+        return methoderror
+    end
     return nothing
 end
 # =================================================================
@@ -465,7 +483,8 @@ function restarted_generalized_minimal_residual_method!(
     vectorx_exactsolution::AbstractVector,
     restartparameter::Integer,
     maximumrestart::Integer,
-    tolerance::AbstractFloat )
+    tolerance::AbstractFloat,
+    informationprint::Bool )
     matrixH = Matrix{Float64}(undef, restartparameter+1, restartparameter)
     matrixQ = Matrix{Float64}(undef, systemdimension, restartparameter+1)
     vectorx_current = vectorx_initial
@@ -535,17 +554,19 @@ function restarted_generalized_minimal_residual_method!(
         end
         vectory = backward_substitution(matrixdimension, matrixH, vectorbethaE )
         vectorx_aproximateSolution = vectorx_current + matrixQ[:,1:matrixdimension]*vectory
-        methoderror = norm(vectorx_aproximateSolution - vectorx_exactsolution) / (norm(vectorx_aproximateSolution))
-        println("El número de reinicio es de $(indexk).")
-        println("El error del método es: $(methoderror).")
         if indexk == maximumrestart
+            methoderror = norm(vectorx_aproximateSolution - vectorx_exactsolution) / (norm(vectorx_aproximateSolution))
             break
         end
         vectorx_current = vectorx_aproximateSolution
         indexk += 1
     end
-    #println("El número de reinicios es de $(indexk).")
-    #println("El error del método es: $(methoderror).")
+    # Output variables
+    if informationprint == true
+        println("For $(maximumrestart) restart with a restart parameter of $(restartparameter)")
+        println("the method error is: $(methoderror)")
+        return methoderror
+    end
     return nothing
 end
 #######################################################################################################################
