@@ -30,7 +30,7 @@ function run_jacobi_method(systemdimension::Integer)
         methodtime = @belapsed jacobi_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/jacobiNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/jacobiNumericalResults_$(sizeSEL).csv", numericalresults)
     return nothing
 end
 function run_gauss_seidel_method(systemdimension::Integer)
@@ -59,7 +59,7 @@ function run_gauss_seidel_method(systemdimension::Integer)
         methodtime = @belapsed gauss_seidel_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/gssNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/gssNumericalResults_$(sizeSEL).csv", numericalresults)
     return nothing
 end
 function run_sor_method(systemdimension::Integer, relaxationParameter::AbstractFloat)
@@ -74,9 +74,10 @@ function run_sor_method(systemdimension::Integer, relaxationParameter::AbstractF
     matrixD =  convert(Matrix, Diagonal(matrixA))
     matrixL = tril(matrixA,-1)
     matrixU = triu(matrixA,1)
-    println("===Sucessive Over Relaxation Method===")
+    println("===Sucessive Over-Relaxation Method===")
     # DataFrame for save method information
     sizeSEL = string(systemdimension)
+    omegaparameter = string(relaxationParameter)
     numericalresults = DataFrame()
     numericalresults.Iterations = 25:25:200
     numericalresults.MethodError = zeros(8)
@@ -88,7 +89,7 @@ function run_sor_method(systemdimension::Integer, relaxationParameter::AbstractF
         methodtime = @belapsed sor_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, $relaxationParameter, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/sorNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/sorNumericalResults_$(sizeSEL)_$(omegaparameter).csv", numericalresults)
     return nothing
 end
 function run_conjuate_gradiente_method(systemdimension::Integer)
@@ -114,7 +115,7 @@ function run_conjuate_gradiente_method(systemdimension::Integer)
         methodtime = @belapsed conjugate_gradient_method!($matrixsparseA, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/cgNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/cgNumericalResults_$(sizeSEL).csv", numericalresults)
     return nothing
 end
 function run_biconjuate_gradiente_stabilized_method(systemdimension::Integer)
@@ -140,7 +141,7 @@ function run_biconjuate_gradiente_stabilized_method(systemdimension::Integer)
         methodtime = @belapsed biconjugate_gradient_stabilized_method!($matrixsparseA, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/bicgstabNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/bicgstabNumericalResults_$(sizeSEL).csv", numericalresults)
     return nothing
 end
 function run_restarted_generalized_minimal_residual_method(systemdimension::Integer, restartparameter::Integer)
@@ -155,6 +156,7 @@ function run_restarted_generalized_minimal_residual_method(systemdimension::Inte
     println("===Generalized Minimal Residual Method===")
     # DataFrame for save method information
     sizeSEL = string(systemdimension)
+    usedparameter = string(restartparameter)
     numericalresults = DataFrame()
     numericalresults.Iterations = 5:5:40
     numericalresults.MethodError = zeros(8)
@@ -166,6 +168,6 @@ function run_restarted_generalized_minimal_residual_method(systemdimension::Inte
         methodtime = @belapsed restarted_generalized_minimal_residual_method!($systemdimension, $matrixsparseA, $vectorb, $vectorx_initial, $vectorx_exactsolution, $restartparameter, $maximumiteration, $tolerance, false)
         numericalresults[indexi, 3] = methodtime
     end
-    CSV.write("Numerical_Experiments/restartedgmresNumericalResults$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/restartedgmresNumericalResults_$(sizeSEL)_$(usedparameter).csv", numericalresults)
     return nothing
 end
