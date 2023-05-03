@@ -1,173 +1,201 @@
 using BenchmarkTools
 using LinearAlgebra: Diagonal, tril, triu
-using SparseArrays: sparse, SparseMatrixCSC
 using DataFrames, CSV
-include("src/IterativesSolversMethods.jl")
+include("src/IterativeSolversMethods.jl")
 BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
-function run_jacobi_method(systemdimension::Integer)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    #tolerance = 1.0e-10
-    # Matrix Split
-    matrixD =  convert(Matrix, Diagonal(matrixA))
-    matrixL = tril(matrixA,-1)
-    matrixU = triu(matrixA,1)
+# ==============================================================================
+function run_jacobi_method(systemDimension::Integer)
     println("===Jacobi Method===")
+
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+
+    # Split Matrix A = D + L + U
+    matrixD = convert(Matrix, Diagonal(matrixA))
+    matrixL = tril(matrixA, -1)
+    matrixU = triu(matrixA, 1)
+
+    # Set for Jacobi Method
+    inverseMatrixD = inv(matrixD)
+    matrixT = matrixL + matrixU
+
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 25:25:200
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #jacobi_method(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximunIteration, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*25
-        numericalresults[indexi, 2] = jacobi_method!(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximumiteration, true)
-        methodtime = @belapsed jacobi_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 25:25:200
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+
+    for i = 1:8
+        maximumIteration = i * 25
+        numericalResults[i, 2] = jacobi_method!(inverseMatrixD, matrixT, vectorB, vectorX_exactSolution, vectorX_initial, maximumIteration, true)
+        methodTime = @belapsed jacobi_method!($inverseMatrixD, $matrixT, $vectorB, $vectorX_exactSolution, $vectorX_initial, $maximumIteration, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/jacobiNumericalResults_$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/jacobiNumericalResults_$(string(systemDimension)).csv", numericalResults)
     return nothing
 end
-function run_gauss_seidel_method(systemdimension::Integer)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    #tolerance = 1.0e-10
-    # Matrix Split
-    matrixD =  convert(Matrix, Diagonal(matrixA))
-    matrixL = tril(matrixA,-1)
-    matrixU = triu(matrixA,1)
+# ==============================================================================
+function run_gauss_seidel_method(systemDimension::Integer)
     println("===Gauss-Seidel Method===")
+
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+
+    # Split Matrix A = D + L + U
+    matrixD = convert(Matrix, Diagonal(matrixA))
+    matrixL = tril(matrixA, -1)
+    matrixU = triu(matrixA, 1)
+
+    # Set for Gauss-Seidel Method
+    inverseMatrixT = inv(matrixD + matrixL)
+
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 25:25:200
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #gauss_seidel_method(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximunIteration, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*25
-        numericalresults[indexi, 2] = gauss_seidel_method!(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximumiteration, true)
-        methodtime = @belapsed gauss_seidel_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 25:25:200
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+
+    for i = 1:8
+        maximumIteration = i * 25
+        numericalResults[i, 2] = gauss_seidel_method!(inverseMatrixT, matrixU, vectorB, vectorX_exactSolution, vectorX_initial, maximumIteration, true)
+        methodTime = @belapsed gauss_seidel_method!($inverseMatrixT, $matrixU, $vectorB, $vectorX_exactSolution, $vectorX_initial, $maximumIteration, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/gssNumericalResults_$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/gssNumericalResults_$(string(systemDimension)).csv", numericalResults)
     return nothing
 end
-function run_sor_method(systemdimension::Integer, relaxationParameter::AbstractFloat)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    #tolerance = 1.0e-10
-    # Matrix Split
-    matrixD =  convert(Matrix, Diagonal(matrixA))
-    matrixL = tril(matrixA,-1)
-    matrixU = triu(matrixA,1)
-    println("===Sucessive Over-Relaxation Method===")
+# ==============================================================================
+function run_sor_method(systemDimension::Integer, relaxationParameter::AbstractFloat)
+    println("===Successive Over-Relaxation Method===")
+
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+    
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+
+    # Split Matrix A = D + L + U
+    matrixD = convert(Matrix, Diagonal(matrixA))
+    matrixL = tril(matrixA, -1)
+    matrixU = triu(matrixA, 1)
+
+    # Set for Gauss-Seidel Method
+    inverseMatrixT = inv(matrixD + relaxationParameter * matrixL)
+    matrixOmegaD = (1 - relaxationParameter) * matrixD
+    matrixOmegaU = relaxationParameter * matrixU
+    vectorF = relaxationParameter * inverseMatrixT * vectorB
+
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    omegaparameter = string(relaxationParameter)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 25:25:200
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #sor_method(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximunIteration, relaxationParameter, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*25
-        numericalresults[indexi, 2] = sor_method!(matrixD, matrixL, matrixU, vectorb, vectorx_exactsolution, vectorx_initial, maximumiteration, relaxationParameter, true)
-        methodtime = @belapsed sor_method!($matrixD, $matrixL, $matrixU, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, $relaxationParameter, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 25:25:200
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+    #sor_method(matrixD, matrixL, matrixU, vectorB, vectorX_exactSolution, vectorX_initial, maximumIteration, relaxationParameter, tolerance)
+    for i = 1:8
+        maximumIteration = i * 25
+        numericalResults[i, 2] = sor_method!(inverseMatrixT, matrixOmegaD, matrixOmegaU, vectorF, vectorX_exactSolution, vectorX_initial, maximumIteration, relaxationParameter, true)
+        methodTime = @belapsed sor_method!($inverseMatrixT, $matrixOmegaD, $matrixOmegaU, $vectorF, $vectorX_exactSolution, $vectorX_initial, $maximumIteration, $relaxationParameter, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/sorNumericalResults_$(sizeSEL)_$(omegaparameter).csv", numericalresults)
+    CSV.write("Numerical_Experiments/sorNumericalResults_$(string(systemDimension))_$(string(relaxationParameter)).csv", numericalResults)
     return nothing
 end
-function run_conjuate_gradiente_method(systemdimension::Integer)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    matrixsparseA = sparse(matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    #tolerance = 1.0e-10
+# ==============================================================================
+function run_conjugate_gradiente_method(systemDimension::Integer)
     println("===Conjugate Gradient Method===")
+
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 5:5:40
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #conjugate_gradient_method(systemdimension, matrixsparseA, vectorb, vectorx_exactsolution, vectorx_initial, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*5
-        numericalresults[indexi, 2] = conjugate_gradient_method!(matrixsparseA, vectorb, vectorx_exactsolution, vectorx_initial, maximumiteration, true)
-        methodtime = @belapsed conjugate_gradient_method!($matrixsparseA, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 5:5:40
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+
+    for i = 1:8
+        maximumIteration = i * 5
+        numericalResults[i, 2] = conjugate_gradient_method!(matrixA, vectorB, vectorX_exactSolution, vectorX_initial, maximumIteration, true)
+        methodTime = @belapsed conjugate_gradient_method!($matrixA, $vectorB, $vectorX_exactSolution, $vectorX_initial, $maximumIteration, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/cgNumericalResults_$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/cgNumericalResults_$(string(systemDimension)).csv", numericalResults)
     return nothing
 end
-function run_biconjuate_gradiente_stabilized_method(systemdimension::Integer)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    matrixsparseA = sparse(matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    #tolerance = 1.0e-10
+# ==============================================================================
+function run_biconjugate_gradiente_stabilized_method(systemDimension::Integer)
     println("===Biconjugate Gradient Stabilized Method===")
+    
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+    
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 5:5:40
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #biconjugate_gradient_stabilized_method(systemdimension, matrixsparseA, vectorb, vectorx_exactsolution, vectorx_initial, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*5
-        numericalresults[indexi, 2] = biconjugate_gradient_stabilized_method!(matrixsparseA, vectorb, vectorx_exactsolution, vectorx_initial, maximumiteration, true)
-        methodtime = @belapsed biconjugate_gradient_stabilized_method!($matrixsparseA, $vectorb, $vectorx_exactsolution, $vectorx_initial, $maximumiteration, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 5:5:40
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+
+    for i = 1:8
+        maximumIteration = i * 5
+        numericalResults[i, 2] = biconjugate_gradient_stabilized_method!(matrixA, vectorB, vectorX_exactSolution, vectorX_initial, maximumIteration, true)
+        methodTime = @belapsed biconjugate_gradient_stabilized_method!($matrixA, $vectorB, $vectorX_exactSolution, $vectorX_initial, $maximumIteration, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/bicgstabNumericalResults_$(sizeSEL).csv", numericalresults)
+    CSV.write("Numerical_Experiments/bicgstabNumericalResults_$(string(systemDimension)).csv", numericalResults)
     return nothing
 end
-function run_restarted_generalized_minimal_residual_method(systemdimension::Integer, restartparameter::Integer)
-    matrixA = Matrix{Float64}(undef, systemdimension, systemdimension)
-    system_matrix_sparse(systemdimension, matrixA)
-    matrixsparseA = sparse(matrixA)
-    vectorb = Vector{Float64}(undef, systemdimension)
-    vector_independent_term(systemdimension, vectorb)
-    vectorx_exactsolution = ones(systemdimension)
-    vectorx_initial = zeros(systemdimension)
-    tolerance = 1.0e-10
+# ==============================================================================
+function run_restarted_generalized_minimal_residual_method(systemDimension::Integer, restartParameter::Integer)
     println("===Generalized Minimal Residual Method===")
+    matrixA = Matrix{Float64}(undef, systemDimension, systemDimension)
+    system_matrix_sparse(systemDimension, matrixA)
+
+    vectorB = Vector{Float64}(undef, systemDimension)
+    vector_independent_term(systemDimension, vectorB)
+    
+    vectorX_exactSolution = ones(systemDimension)
+    vectorX_initial = zeros(systemDimension)
+    tolerance = 1.0e-10
+    
     # DataFrame for save method information
-    sizeSEL = string(systemdimension)
-    usedparameter = string(restartparameter)
-    numericalresults = DataFrame()
-    numericalresults.Iterations = 5:5:40
-    numericalresults.MethodError = zeros(8)
-    numericalresults.RunTime = zeros(8)
-    #restarted_generalized_minimal_residual_method(systemdimension, matrixsparseA, vectorb, vectorx_initial, vectorx_exactsolution, restartparameter, tolerance)
-    for indexi = 1:8
-        maximumiteration = indexi*5
-        numericalresults[indexi, 2] = restarted_generalized_minimal_residual_method!(systemdimension, matrixsparseA, vectorb, vectorx_initial, vectorx_exactsolution, restartparameter, maximumiteration, tolerance, true)
-        methodtime = @belapsed restarted_generalized_minimal_residual_method!($systemdimension, $matrixsparseA, $vectorb, $vectorx_initial, $vectorx_exactsolution, $restartparameter, $maximumiteration, $tolerance, false)
-        numericalresults[indexi, 3] = methodtime
+    numericalResults = DataFrame()
+    numericalResults.Iterations = 5:5:40
+    numericalResults.methodError = zeros(8)
+    numericalResults.RunTime = zeros(8)
+    
+    for i = 1:8
+        maximumIteration = i * 5
+        numericalResults[i, 2] = restarted_generalized_minimal_residual_method!(systemDimension, matrixA, vectorB, vectorX_initial, vectorX_exactSolution, restartParameter, maximumIteration, tolerance, true)
+        methodTime = @belapsed restarted_generalized_minimal_residual_method!($systemDimension, $matrixA, $vectorB, $vectorX_initial, $vectorX_exactSolution, $restartParameter, $maximumIteration, $tolerance, false)
+        numericalResults[i, 3] = methodTime
     end
-    CSV.write("Numerical_Experiments/restartedgmresNumericalResults_$(sizeSEL)_$(usedparameter).csv", numericalresults)
+    CSV.write("Numerical_Experiments/restartedGmresNumericalResults_$(string(systemDimension))_$(string(restartParameter)).csv", numericalResults)
     return nothing
 end
